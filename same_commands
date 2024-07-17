@@ -49,4 +49,224 @@ local          18.16 GiB
 
 24)  db.user.find({role:"admin",useremail:/regexsoftware.com/})  // it shows all data contains regexsoftware.com email.
 
-25)  
+// Horizontal scaling.
+// operation pipeline
+-> $match,$group,$unwind,$project    
+
+db.user.aggregate([])
+
+1) 
+
+[
+  {
+    $match: {
+      salary:{$gte:50000,$lte:500000}
+    }
+  }
+]
+
+2) 
+
+[
+  {
+    $match: {
+     gender:"Female",
+      city:"Goa",
+      age:{$gte:24},
+      skills:{$all:["Python","C++"]}
+    }
+  }
+]
+3)
+
+[
+  {
+    $match: {
+    
+      city:{$in:["New Delhi","Mumbai"]}
+     
+    }
+  }
+]
+
+4) 
+
+[
+  {
+    $match: {
+      city: "New Delhi"
+    }
+  },
+  {
+  $count:"total user from delhi",
+  }
+    ]
+ // it count users ex. 
+  "total user from delhi": 3
+   5)
+
+[
+  {
+    $group:{
+      _id:"$city",
+      maxSal:{$max:"$salary"},
+      avgSal:{$avg:"$salary"},
+      minSal:{$min:"$salary"}
+    }
+  }
+    ]
+
+6)
+
+[
+  {
+    $group:{
+      _id:"$gender",
+      
+      avgAge:{$avg:"$age"},
+     
+    }
+  }
+    ]
+7)
+
+[
+  {
+    $group:{
+      _id:["$gender","$city"],
+      
+      
+     
+    }
+  }
+    ]
+
+8)
+
+[
+  {
+    $group:{
+      // _id:["$gender","$city"],
+      // totalSal:{$sum:"$salary"}
+      // maxSal:{$max:"$salary"}
+      
+      
+     
+    }
+  }
+    ]
+9)
+
+[
+  {
+    
+     $unwind:"$skills"
+  },
+  {
+    $group:{
+      _id:"$skills",
+      totalusers:{$sum:1}
+    }
+  }
+  
+    ]
+// it break the skills and then group them and also find total users bcoz skills can't group directly bcoz it is in array format.   
+
+10)
+
+[
+  {
+    
+     $unwind:"$skills"
+  },
+  {
+    $group:{
+      _id:"$skills",
+      totalusers:{$sum:1}
+       }
+  },
+  {
+    $project:{
+      skills:"$_id",
+      totalusers:1
+    }
+ 
+  },
+  {
+    $match:{
+      totalusers:{$gte:2}
+    }
+  }
+]
+
+11)
+
+[
+  {
+    
+     $unwind:"$skills"
+  },
+   {
+    $group:{
+      _id:"$skills",
+      totalusers:{$sum:1},
+      // avgUser:{$avg:"$skills"}
+    
+    }
+  },
+  {
+    $project:{
+      skills:"$_id",
+      totalusers:1
+    }
+ 
+  },
+  {
+    $group{
+    _id:"$skills",
+        avgUser:{$avg}
+  }
+  },
+  {
+    $match:{
+      totalusers:{$gte:2},
+    }
+  }
+]
+12)
+
+[
+  {
+    $addFields: {
+      skillSize:{$size:"$skills"}
+    }
+  }
+]
+
+// here each user skill count.
+
+13)
+
+ {
+    $sort: {
+      usercount: -1
+    }
+  },
+  {
+    $limit: 5
+  }
+  
+  14)
+
+  [
+  {
+    $unwind:"$skills"
+ },
+  
+  {
+    $group: {
+      _id:"$skills",
+      user:{$push:"$username"}
+    }
+    }
+  ]
